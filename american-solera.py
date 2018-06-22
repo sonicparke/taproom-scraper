@@ -11,6 +11,11 @@ taproom = ''
 last_taproom = 'none'
 beer = ''
 
+search_text = html_soup.findAll("p", class_="search-text")
+for search in search_text:
+  search.extract()
+
+
 for tag in pTag:
   spanTag = tag.find('span')
   if spanTag:
@@ -20,17 +25,26 @@ for tag in pTag:
       extracted_records = {
         'location': taproom
       }
-      print('taproom: ', taproom)
+  strongTag = tag.find('strong')
+  if strongTag:
+    parent = strongTag.find_parent('p')
+    parent.decompose()
+  if (last_taproom != taproom):
+    print('taproom: ', taproom)
+  else:
+    print('tag: ', tag)
 
-  print('tag: ', tag)
+
   if last_taproom != taproom:
     last_taproom = taproom
     # while last_taproom == taproom:
-    print('last_taproom: ', last_taproom)
-    print('tag: ', tag)
+    # print('last_taproom: ', last_taproom)
+    # print('tag: ', tag)
     # Filter out Headers
     if tag.find('strong'):
       tag.extract()
+
+
 
     # else:
     #   left_column = tag.parent.parent.parent.parent.find_all('div', class_='vc_col-has-fill')
