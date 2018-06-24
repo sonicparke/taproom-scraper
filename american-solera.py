@@ -1,24 +1,25 @@
 from requests import get
 from bs4 import BeautifulSoup
-from itertools import *
+import re
 
 url = "https://americansolera.com/current-selection/current-drafts/"
 
 response = get(url)
 html_soup = BeautifulSoup(response.text, 'html.parser')
 pTag = html_soup.find_all('p')
-extracted_records = []
-location1 = []
-location2 = []
-taproom = ''
-last_taproom = 'none'
-beer = {}
-
-location1obj = {}
-location2obj = {}
 locations = []
+location1List = []
+location2List = []
+location1obj = {
+    "taproom": "",
+    "on_tap": []
+}
+location2obj = {
+    "taproom": "",
+    "on_tap": []
+}
 location1beers = []
-
+location2beers = []
 
 # Remove search text at end of page
 search_text = html_soup.findAll("p", class_="search-text")
@@ -34,13 +35,11 @@ for tag in pTag:
         strongTag = spanTag.find('strong')
         if strongTag:
             taproom = strongTag.text.strip()
-            if not location1:
-                # location1.append('taproom')
-                location1.append(taproom)
+            if not location1List:
+                location1List.append(taproom)
 
             else:
-                # location2.append('taproom')
-                location2.append(taproom)
+                location2List.append(taproom)
 
     # If there is a <strong> tag but not inside a <span> then it's probably a column heading
     strongTag = tag.find('strong')
@@ -50,27 +49,38 @@ for tag in pTag:
 
     # Grab the beers and descriptions
     else:
-        if not location1 or not location2:
-            location1.append(tag.text.strip())
-        else:
-            location2.append(tag.text.strip())
+        text = tag.text.strip()
+        if text != '':
+            # check for rouge &nbsp; that comes through as \xa0
+            if '\xa0' in text:
+                text = re.sub(u'\xa0', u' ', text)
 
-# location1beers
-
-
-location1obj = {
-    'taproom': location1[0],
-    'beers': location1beers
-}
-
-# location1beers = dict(zip_longest(*[iter(location1)] * 2, fillvalue=""))
-
-# print('location1beers: ', location1beers)
-
-# print('location1: ', location1)
-# print('location2: ', location2)
+            if not location1List or not location2List:
+                location1List.append(text)
+            else:
+                location2List.append(text)
 
 
-# print('location1obj: ', location1obj)
-# print('extracted_records: ', extracted_records)
+# Build the objects
+location1obj['taproom'] = location1List.pop(0)
+location2obj['taproom'] = location2List.pop(0)
+
+while location1List:
+    location1beers = {
+        "beer": location1List.pop(0),
+        "description": location1List.pop(0)
+    }
+    location1obj['on_tap'].append(location1beers)
+
+while location2List:
+    location2beers = {
+        "beer": location2List.pop(0),
+        "description": location2List.pop(0)
+    }
+    location2obj['on_tap'].append(location2beers)
+
+locations.append(location1obj)
+locations.append(location2obj)
+
+print('locations: ', locations)
 print('done')
